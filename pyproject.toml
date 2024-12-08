@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "mirk"
-version = "0.1.0"
+version = "0.1.1"
 description = "Mirk is a vision-reasoning pipeline designed to interpret scenes only when needed."
 authors = ["Dima Timofeev <dimkat@gmail.com>"]
 readme = "README.md"
