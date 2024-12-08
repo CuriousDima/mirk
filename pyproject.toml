@@ -4,6 +4,9 @@ version = "0.1.0"
 description = "Mirk is a vision-reasoning pipeline designed to interpret scenes only when needed."
 authors = ["Dima Timofeev <dimkat@gmail.com>"]
 readme = "README.md"
+license = "MIT"
+repository = "https://github.com/CuriousDima/mirk"
+keywords = ["vision", "ai", "reasoning"]
 
 
 [tool.poetry.dependencies]
