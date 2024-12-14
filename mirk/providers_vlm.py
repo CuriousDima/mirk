@@ -11,7 +11,10 @@ load_dotenv()
 
 
 class VLMProvider(ABC):
-    """Abstract base class for Vision-Language Model providers."""
+    """Abstract base class for Vision-Language Model providers.
+
+    Provides interface and common functionality for vision-language models.
+    """
 
     def __init__(self, api_key: Optional[str] = None) -> None:
         """Initialize the VLM provider.
@@ -26,24 +29,29 @@ class VLMProvider(ABC):
         """Ask a question about an image.
 
         Args:
-            image_path: Path to the image file
-            question: Question about the image
+            image_path: Path to the image file.
+            question: Question about the image.
 
         Returns:
-            str: Model's response to the question
+            str: Model's response to the question.
         """
         pass
 
 
 class OpenAIVLMProvider(VLMProvider):
-    """Provider for OpenAI's GPT-4o Vision API."""
+    """Provider for OpenAI's GPT-4 Vision API."""
 
-    def __init__(self, api_key: Optional[str] = None, model: str = "gpt-4o") -> None:
+    def __init__(
+        self, api_key: Optional[str] = None, model: str = "gpt-4-vision-preview"
+    ) -> None:
         """Initialize the OpenAI VLM provider.
 
         Args:
             api_key: OpenAI API key. If None, will try to get from OPENAI_API_KEY environment variable.
             model: Model to use. Defaults to GPT-4 Vision.
+
+        Raises:
+            ValueError: If OpenAI API key is not provided and not found in environment.
         """
         super().__init__(api_key)
         # Use provided api_key or get from environment
@@ -60,27 +68,27 @@ class OpenAIVLMProvider(VLMProvider):
         """Encode image to base64 string.
 
         Args:
-            image_path: Path to the image file
+            image_path: Path to the image file.
 
         Returns:
-            str: Base64 encoded image
+            str: Base64 encoded image.
         """
         with open(image_path, "rb") as image_file:
             return base64.b64encode(image_file.read()).decode("utf-8")
 
     def ask_about_image(self, image_path: str, question: str) -> str:
-        """Ask a question about an image using GPT-4o.
+        """Ask a question about an image using GPT-4 Vision.
 
         Args:
-            image_path: Path to the image file
-            question: Question about the image
+            image_path: Path to the image file.
+            question: Question about the image.
 
         Returns:
-            str: Model's response to the question
+            str: Model's response to the question.
 
         Raises:
-            FileNotFoundError: If image file doesn't exist
-            ValueError: If image path is invalid
+            FileNotFoundError: If image file doesn't exist.
+            ValueError: If image path is invalid.
         """
         # Verify image path
         image_path = Path(image_path)

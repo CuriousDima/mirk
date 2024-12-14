@@ -39,7 +39,7 @@ def parse_args() -> argparse.Namespace:
     args = parser.parse_args()
 
     if not args.video_path:
-        parser.error("--video_path argument is required")
+        parser.error("--video-path argument is required")
 
     return args
 
@@ -52,21 +52,26 @@ def main():
     # https://github.com/ultralytics/ultralytics/blob/main/ultralytics/cfg/datasets/coco.yaml
     cv_yolo = YOLOProvider()
 
-    # Detect person in video
-    result = cv_yolo.detect_until_object(
-        source=args.video_path, target_class="person", conf_threshold=0.8
-    )
-
-    if result:
-        frame_num, confidence = result
-        print(f"Found person in frame {frame_num} with confidence {confidence:.2f}")
+    # Detect an object in video - get first detection that meets our confidence threshold
+    # You can use for loop to get all detections that meet our confidence threshold.
+    try:
+        frame_num, confidence = next(
+            cv_yolo.detect(
+                source=args.video_path,
+                target_class=args.target_class,
+                conf_threshold=0.8,
+            )
+        )
+        print(
+            f"Found {args.target_class} in frame {frame_num} with confidence {confidence:.2f}"
+        )
 
         # Create output directory if it doesn't exist
         output_dir = Path(args.output_dir)
         output_dir.mkdir(parents=True, exist_ok=True)
 
         # Save the detected frame
-        output_path = output_dir / f"detected_person_frame_{frame_num}.jpg"
+        output_path = output_dir / f"detected_{args.target_class}_frame_{frame_num}.jpg"
         cv_yolo.save_frame(args.video_path, frame_num, str(output_path))
         print(f"Saved frame to: {output_path}")
 
@@ -77,8 +82,9 @@ def main():
         answer = vlm_openai.ask_about_image(str(output_path), args.question)
         print(f"\nQuestion: {args.question}")
         print(f"Answer: {answer}")
-    else:
-        print("Target object not found in video")
+
+    except StopIteration:
+        print(f"Target object '{args.target_class}' not found in video")
 
 
 if __name__ == "__main__":

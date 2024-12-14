@@ -16,11 +16,9 @@ class MockCVProvider(CVProvider):
     def __init__(self, model_path: str) -> None:
         super().__init__(model_path)
 
-    def detect_until_object(
-        self, source: str, target_class: str, conf_threshold: float = 0.8
-    ) -> Optional[Tuple[int, float]]:
-        # Implement required abstract method
-        return None
+    def detect(self, frame) -> list:
+        """Implement the required abstract detect method."""
+        return []  # Return empty list for mock implementation
 
 
 class TestCVProvider:
