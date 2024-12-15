@@ -1,7 +1,5 @@
 from abc import ABC, abstractmethod
 from typing import Optional
-from pathlib import Path
-import base64
 from openai import OpenAI
 from dotenv import load_dotenv
 import os
@@ -64,40 +62,17 @@ class OpenAIVLMProvider(VLMProvider):
         self.client = OpenAI(api_key=self.api_key)
         self.model = model
 
-    def _encode_image(self, image_path: str) -> str:
-        """Encode image to base64 string.
-
-        Args:
-            image_path: Path to the image file.
-
-        Returns:
-            str: Base64 encoded image.
-        """
-        with open(image_path, "rb") as image_file:
-            return base64.b64encode(image_file.read()).decode("utf-8")
-
-    def ask_about_image(self, image_path: str, question: str) -> str:
+    def ask_about_image(self, base64_image: str, question: str) -> str:
         """Ask a question about an image using GPT-4 Vision.
 
         Args:
-            image_path: Path to the image file.
+            base64_image: Base64 encoded image.
             question: Question about the image.
 
         Returns:
             str: Model's response to the question.
 
-        Raises:
-            FileNotFoundError: If image file doesn't exist.
-            ValueError: If image path is invalid.
         """
-        # Verify image path
-        image_path = Path(image_path)
-        if not image_path.exists():
-            raise FileNotFoundError(f"Image not found at {image_path}")
-
-        # Encode image
-        base64_image = self._encode_image(str(image_path))
-
         # Prepare the messages
         messages = [
             {

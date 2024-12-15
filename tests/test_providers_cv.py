@@ -2,8 +2,8 @@
 import cv2
 import numpy as np
 from pathlib import Path
-from typing import Optional, Tuple
 import pytest
+import base64
 
 # Local imports
 from mirk.providers_cv import CVProvider
@@ -99,3 +99,45 @@ class TestCVProvider:
         """Test that CVProvider cannot be instantiated without implementing abstract method."""
         with pytest.raises(TypeError, match="Can't instantiate abstract class"):
             CVProvider("dummy_model.pt")
+
+    def test_get_encoded_frame_success(
+        self,
+        cv_provider: MockCVProvider,
+        sample_video: Path,
+    ) -> None:
+        """Test getting a valid frame as base64 encoded string."""
+        # Get frame 1 (second frame)
+        encoded_frame = cv_provider.get_encoded_frame(str(sample_video), 1)
+
+        # Verify we got a non-empty string
+        assert isinstance(encoded_frame, str)
+        assert len(encoded_frame) > 0
+
+        # Verify it's valid base64
+        try:
+            decoded = base64.b64decode(encoded_frame)
+            # Verify it's a valid image
+            np_arr = np.frombuffer(decoded, np.uint8)
+            img = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
+            assert img is not None
+            # Verify the frame content (should be around 50 as per sample_video fixture)
+            assert np.mean(img) == pytest.approx(50, abs=5)
+        except Exception as e:
+            pytest.fail(f"Failed to decode base64 string: {e}")
+
+    def test_get_encoded_frame_invalid_frame_number(
+        self,
+        cv_provider: MockCVProvider,
+        sample_video: Path,
+    ) -> None:
+        """Test getting frame with invalid frame number."""
+        with pytest.raises(ValueError, match="Could not extract frame"):
+            cv_provider.get_encoded_frame(str(sample_video), 999)
+
+    def test_get_encoded_frame_invalid_video_path(
+        self,
+        cv_provider: MockCVProvider,
+    ) -> None:
+        """Test getting frame from non-existent video."""
+        with pytest.raises(ValueError, match="Could not extract frame"):
+            cv_provider.get_encoded_frame("nonexistent_video.mp4", 0)

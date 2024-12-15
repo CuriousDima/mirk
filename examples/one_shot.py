@@ -2,7 +2,6 @@
 
 import sys
 import argparse
-from pathlib import Path
 
 sys.path.append("../mirk")
 
@@ -66,20 +65,13 @@ def main():
             f"Found {args.target_class} in frame {frame_num} with confidence {confidence:.2f}"
         )
 
-        # Create output directory if it doesn't exist
-        output_dir = Path(args.output_dir)
-        output_dir.mkdir(parents=True, exist_ok=True)
-
-        # Save the detected frame
-        output_path = output_dir / f"detected_{args.target_class}_frame_{frame_num}.jpg"
-        cv_yolo.save_frame(args.video_path, frame_num, str(output_path))
-        print(f"Saved frame to: {output_path}")
-
         # Ask about the saved frame
         # OpenAIVLMProvider will use OPENAI_API_KEY environment variable.
         # See .env.example file. Create your own .env file to use your own API key.
+        base64_frame = cv_yolo.get_encoded_frame(args.video_path, frame_num)
+
         vlm_openai = OpenAIVLMProvider(model="gpt-4o")
-        answer = vlm_openai.ask_about_image(str(output_path), args.question)
+        answer = vlm_openai.ask_about_image(base64_frame, args.question)
         print(f"\nQuestion: {args.question}")
         print(f"Answer: {answer}")
 

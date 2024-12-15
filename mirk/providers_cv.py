@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Generator, Tuple
 from pathlib import Path
-import time
+import base64
 
 import cv2
 from ultralytics import YOLO
@@ -37,6 +37,32 @@ class CVProvider(ABC):
                 was detected, or None if not found.
         """
         pass
+
+    def get_encoded_frame(self, video_path: str, frame_number: int) -> str:
+        """Get a specific frame from a video file as a binary base64 encoded string.
+
+        Args:
+            video_path: Path to the video file.
+            frame_number: Frame number to get.
+
+        Returns:
+            str: Base64 encoded frame image.
+
+        Raises:
+            ValueError: If the specified frame cannot be extracted from the video.
+        """
+        cap = cv2.VideoCapture(video_path)
+        cap.set(cv2.CAP_PROP_POS_FRAMES, frame_number)
+        ret, frame = cap.read()
+        cap.release()
+
+        if not ret:
+            raise ValueError(f"Could not extract frame {frame_number} from video")
+
+        # Encode frame to jpg format
+        _, buffer = cv2.imencode(".jpg", frame)
+        # Convert to base64 string
+        return base64.b64encode(buffer).decode("utf-8")
 
     def save_frame(self, video_path: str, frame_number: int, output_path: str) -> None:
         """Save a specific frame from a video file as an image.
