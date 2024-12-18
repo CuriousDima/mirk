@@ -33,8 +33,30 @@ class CVProvider(ABC):
             conf_threshold: Confidence threshold for detection (0-1).
 
         Returns:
-            Optional[Tuple[int, float]]: Tuple of (frame_number, confidence) where object
-                was detected, or None if not found.
+            Generator[Tuple[int, float], None, None]: Generator of (frame_number, confidence)
+                where object was detected.
+        """
+        pass
+
+    @abstractmethod
+    def detect_stream(
+        self,
+        source: int,
+        target_class: str,
+        conf_threshold: float = 0.8,
+        debug: bool = False,
+    ) -> Generator[str, None, None]:
+        """Run inference on camera stream until specified object is detected.
+
+        Args:
+            source: Camera index (e.g., 0 for default camera).
+            target_class: Class name to look for (e.g., 'person', 'car').
+            conf_threshold: Confidence threshold for detection (0-1).
+            debug: If True, save the frame to a file.
+
+        Returns:
+            Generator[str, None, None]: Generator of
+                base64 encoded string of the frame image where object was detected.
         """
         pass
 
@@ -129,3 +151,55 @@ class YOLOProvider(CVProvider):
                     predicted_class = current_result.names[class_id]
                     if predicted_class == target_class and confidence >= conf_threshold:
                         yield frame_idx, confidence
+
+    def detect_stream(
+        self,
+        source: int,
+        target_class: str,
+        conf_threshold: float = 0.5,
+        debug: bool = False,
+    ) -> Generator[str, None, None]:
+        """Run inference on camera stream until specified object is detected.
+
+        Args:
+            source: Camera index (e.g., 0 for default camera).
+            target_class: Class name to look for (e.g., 'person', 'car').
+            conf_threshold: Confidence threshold for detection (0-1).
+            debug: If True, save the frame to a file.
+
+        Returns:
+            Generator[str, None, None]: Generator of
+                base64 encoded string of the frame image where object was detected.
+
+        Raises:
+            RuntimeError: If camera cannot be opened.
+        """
+        cap = cv2.VideoCapture(source)
+        if not cap.isOpened():
+            raise RuntimeError(f"Could not open camera at index {source}.")
+
+        try:
+            while True:
+                ret, frame = cap.read()
+                if not ret:
+                    raise RuntimeError("Could not read frame from camera.")
+
+                results = self.model.predict(frame, verbose=False)
+
+                if len(results) > 0:
+                    for current_result in results[0]:
+                        for box in current_result.boxes:
+                            class_id = int(box.cls[0])
+                            confidence = float(box.conf[0])
+                            predicted_class = current_result.names[class_id]
+                            if (
+                                predicted_class == target_class
+                                and confidence >= conf_threshold
+                            ):
+                                # Encode frame to base64
+                                _, buffer = cv2.imencode(".jpg", frame)
+                                if debug:
+                                    cv2.imwrite("output.jpg", frame)
+                                yield base64.b64encode(buffer).decode("utf-8")
+        finally:
+            cap.release()
