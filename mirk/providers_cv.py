@@ -2,6 +2,8 @@ from abc import ABC, abstractmethod
 from typing import Generator, Tuple
 from pathlib import Path
 import base64
+from PIL import Image
+from typing import Union
 
 import cv2
 from ultralytics import YOLO
@@ -44,8 +46,9 @@ class CVProvider(ABC):
         source: int,
         target_class: str,
         conf_threshold: float = 0.8,
+        return_pil: bool = False,
         debug: bool = False,
-    ) -> Generator[str, None, None]:
+    ) -> Generator[Union[str, Image.Image], None, None]:
         """Run inference on camera stream until specified object is detected.
 
         Args:
@@ -85,6 +88,18 @@ class CVProvider(ABC):
         _, buffer = cv2.imencode(".jpg", frame)
         # Convert to base64 string
         return base64.b64encode(buffer).decode("utf-8")
+
+    def get_frame_as_image(self, video_path: str, frame_number: int) -> Image.Image:
+        """Get a specific frame from a video file as a PIL image.
+
+        Args:
+            video_path: Path to the video file.
+            frame_number: Frame number to get.
+
+        Returns:
+            Image.Image: PIL image of the frame.
+        """
+        pass
 
     def save_frame(self, video_path: str, frame_number: int, output_path: str) -> None:
         """Save a specific frame from a video file as an image.
@@ -157,8 +172,9 @@ class YOLOProvider(CVProvider):
         source: int,
         target_class: str,
         conf_threshold: float = 0.5,
+        return_pil: bool = False,
         debug: bool = False,
-    ) -> Generator[str, None, None]:
+    ) -> Generator[Union[str, Image.Image], None, None]:
         """Run inference on camera stream until specified object is detected.
 
         Args:
@@ -196,10 +212,14 @@ class YOLOProvider(CVProvider):
                                 predicted_class == target_class
                                 and confidence >= conf_threshold
                             ):
-                                # Encode frame to base64
-                                _, buffer = cv2.imencode(".jpg", frame)
-                                if debug:
-                                    cv2.imwrite("output.jpg", frame)
-                                yield base64.b64encode(buffer).decode("utf-8")
+                                if return_pil:
+                                    rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                                    yield Image.fromarray(rgb_frame)
+                                else:
+                                    # Encode frame to base64
+                                    _, buffer = cv2.imencode(".jpg", frame)
+                                    if debug:
+                                        cv2.imwrite("output.jpg", frame)
+                                    yield base64.b64encode(buffer).decode("utf-8")
         finally:
             cap.release()

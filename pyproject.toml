@@ -19,6 +19,14 @@ torch = "2.2.1"
 transitions = "^0.9.0"
 ultralytics = "^8.1.28"
 
+[tool.poetry.group.apple]
+optional = true
+
+[tool.poetry.group.apple.dependencies]
+mlx = "^0.21.0"
+huggingface_hub = "^0.24.0"
+transformers = "^4.47.0"
+
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.0.0"
 

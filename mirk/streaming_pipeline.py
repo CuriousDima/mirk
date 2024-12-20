@@ -6,8 +6,10 @@ To manage costs and prevent overspending, the pipeline halts after reaching the 
 This limit can be set to infinity if using a local VLM or you understand what you are doing.
 """
 
+import math
+
 from mirk.providers_cv import CVProvider, YOLOProvider
-from mirk.providers_vlm import VLMProvider, OpenAIVLMProvider
+from mirk.providers_vlm import VLMProvider, LlavaAppleSiliconVLMProvider
 
 
 class StreamingPipeline:
@@ -41,6 +43,7 @@ class StreamingPipeline:
     def reason(
         self,
         source: int = 0,
+        return_pil: bool = True,
         debug: bool = False,
     ):
         """Reason about the image.
@@ -53,7 +56,11 @@ class StreamingPipeline:
             Generator[str, None, None]: Generator of reasons.
         """
         for frame_str in self.cv_provider.detect_stream(
-            source, self.target_class, self.conf_threshold, debug
+            source,
+            self.target_class,
+            self.conf_threshold,
+            return_pil=return_pil,
+            debug=debug,
         ):
             yield self.vlm_provider.ask_about_image(frame_str, self.prompt)
             self.invocations += 1
@@ -63,7 +70,13 @@ class StreamingPipeline:
 
 if __name__ == "__main__":
     cv_provider = YOLOProvider()
-    vlm_provider = OpenAIVLMProvider()
-    pipeline = StreamingPipeline(cv_provider, vlm_provider, "person")
+    vlm_provider = LlavaAppleSiliconVLMProvider(temperature=0.9)
+    pipeline = StreamingPipeline(
+        cv_provider,
+        vlm_provider,
+        target_class="person",
+        prompt="USER: <image>\nHow many people are there and what nationality are they?\nASSISTANT:",
+        max_invocations=math.inf,
+    )
     for reason in pipeline.reason():
         print(reason)
